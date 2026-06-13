@@ -615,12 +615,10 @@ function addEntry() {
   S.entries.push(entry);
   tickStreak(); save(); burst(); toast('記録しました！');
   numStr=''; render();
-  // GASに送信
+  // GASに送信（GETリクエスト）
   const date=`${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
-  fetch(GAS_URL, {
-    method:'POST',
-    body: JSON.stringify({date, time:entry.time, category:cat?cat.name:selCat, amount:amt}),
-  }).catch(()=>{}); // エラーは無視（ローカル保存は完了しているため）
+  const params = encodeURIComponent(JSON.stringify({date, time:entry.time, category:cat?cat.name:selCat, amount:amt}));
+  fetch(`${GAS_URL}?data=${params}`).catch(()=>{});
 }
 
 function deleteEntry(idx) { S.entries.splice(idx,1); save(); render(); toast('削除しました'); }
