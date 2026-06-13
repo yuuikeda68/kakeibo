@@ -243,7 +243,8 @@ body {
 .sub-name { font-size: 13px; }
 .sub-amt { font-size: 13px; color: var(--danger); font-weight: 600; }
 .sub-del { background: none; border: none; color: var(--text3); font-size: 16px; cursor: pointer; padding: 4px 8px; }
-.sub-add { display: flex; gap: 7px; margin-top: 12px; }
+.sub-add { display: flex; flex-direction: column; gap: 7px; margin-top: 12px; }
+.sub-add-row { display: flex; gap: 7px; }
 .sub-add input {
   flex: 1; background: var(--surface2); border: 1px solid var(--border);
   border-radius: var(--r-sm); padding: 9px 11px; color: var(--text);
@@ -391,12 +392,14 @@ body {
 <!-- Subs modal -->
 <div class="modal-bg" id="modalSubs">
   <div class="modal">
-    <h3>📌 サブスク・固定費</h3>
+    <h3>📌 固定費</h3>
     <div id="subList"></div>
     <div class="sub-add">
       <input type="text" id="subName" placeholder="サービス名" inputmode="text">
-      <input type="number" id="subAmt" placeholder="金額" inputmode="numeric" style="width:90px;flex:none">
-      <button onclick="addSub()">追加</button>
+      <div class="sub-add-row">
+        <input type="number" id="subAmt" placeholder="金額" inputmode="numeric">
+        <button onclick="addSub()">追加</button>
+      </div>
     </div>
     <div style="margin-top:16px;border-top:1px solid var(--border);padding-top:14px">
       <div class="meter-label">月の予算上限</div>
@@ -617,11 +620,22 @@ function addEntry() {
   numStr=''; render();
   // GASに送信（GETリクエスト）
   const date=`${now.getFullYear()}/${String(now.getMonth()+1).padStart(2,'0')}/${String(now.getDate()).padStart(2,'0')}`;
-  const params = encodeURIComponent(JSON.stringify({date, time:entry.time, category:cat?cat.name:selCat, amount:amt}));
+  const params = encodeURIComponent(JSON.stringify({date, time:entry.time, category:cat?cat.name:selCat, amount:amt, status:'記録'}));
   fetch(`${GAS_URL}?data=${params}`).catch(()=>{});
 }
 
-function deleteEntry(idx) { S.entries.splice(idx,1); save(); render(); toast('削除しました'); }
+function deleteEntry(idx) {
+  const e = S.entries[idx];
+  const cat = CATS.find(c=>c.id===e.cat);
+  const d = new Date(e.month.replace('-','/') + '/01');
+  // GASに削除ログ送信
+  const params = encodeURIComponent(JSON.stringify({
+    date: e.month.replace('-','/') + '/' + new Date().getDate().toString().padStart(2,'0'),
+    time: e.time, category: cat?cat.name:e.cat, amount: e.amt, status:'削除'
+  }));
+  fetch(`${GAS_URL}?data=${params}`).catch(()=>{});
+  S.entries.splice(idx,1); save(); render(); toast('削除しました');
+}
 
 /* ── Modals ── */
 const cap = s=>s[0].toUpperCase()+s.slice(1);
